@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "appsvc_fnc_dev_scw_email_dotnet001": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7254",
+      "launchBrowser": false
+    }
+  }
+}
