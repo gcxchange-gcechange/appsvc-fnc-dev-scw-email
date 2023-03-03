@@ -12,9 +12,8 @@ using System.Threading.Tasks;
 
 namespace appsvc_fnc_dev_scw_email_dotnet001
 {
-    public class ROPCConfidentialTokenCredential : Azure.Core.TokenCredential
+    public class ROPCConfidentialTokenCredential : TokenCredential
     {
-        // Implementation of the Azure.Core.TokenCredential class
         string _username = "";
         string _password = "";
         string _tenantId = "";
@@ -37,7 +36,7 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
                     Delay = TimeSpan.FromSeconds(2),
                     MaxDelay = TimeSpan.FromSeconds(16),
                     MaxRetries = 5,
-                    Mode = Azure.Core.RetryMode.Exponential
+                    Mode = RetryMode.Exponential
                 }
             };
 
@@ -46,10 +45,6 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
             var clientSecret = secret_client.Value;
             KeyVaultSecret secret_password = client.GetSecret(config["secretNamePassword"]);
             var password = secret_password.Value;
-
-            // local testing
-            //var clientSecret = config["clientSecret"];
-            //var password = config["password_delegated"];
 
             // Public Constructor
             _username = config["delegated_username"];

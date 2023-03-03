@@ -1,29 +1,22 @@
 using System;
-using Microsoft.AspNetCore.Mvc;
-using System.IO;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using System.Linq.Expressions;
 
 namespace appsvc_fnc_dev_scw_email_dotnet001
 {
     public class Email
     {
         [FunctionName("Email")]
-        public void Run([QueueTrigger("email", Connection = "AzureWebJobsStorage")] SpaceRequest myQueueItem, ILogger log)
+        public void Run([QueueTrigger("email", Connection = "AzureWebJobsStorage")] string myQueueItem, ILogger log)
         {
-            log.LogInformation("Email trigger function triggered");
+            log.LogInformation("Email trigger function triggered Test");
 
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json", optional: true, reloadOnChange: true).AddEnvironmentVariables().Build();
+            dynamic data = JsonConvert.DeserializeObject(myQueueItem);
 
             log.LogInformation($"myQueueItem = {myQueueItem}");
 
@@ -33,24 +26,19 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
 
             try {
                 string emails = "";
-                string siteUrl = $"https://devgcx.sharepoint.com/teams/{myQueueItem.Id}";
-                string displayName = myQueueItem.SpaceName;
-                string status = myQueueItem.Status;
-                string comments = myQueueItem.Comment;
-                string requester = myQueueItem.RequesterName;
-                string requesterEmail = myQueueItem.RequesterEmail;
+                string siteUrl = $"{config["sharePointUrl"]}{data?.Id}";
+                string displayName = data?.SpaceName;
+                string status = data?.Status;
+                string comments = data?.Comment;
+                string requester = data?.RequesterName;
+                string requesterEmail = data?.RequesterEmail;
                 string EmailSender = config["userId"];
                 string HD_Email = "";
 
-                log.LogInformation($"myQueueItem.Id = {myQueueItem.Id}");
-                log.LogInformation($"myQueueItem.SpaceName = {myQueueItem.SpaceName}");
-                log.LogInformation($"myQueueItem.Status = {myQueueItem.Status}");
-                log.LogInformation($"myQueueItem.Comment = {myQueueItem.Comment}");
-                log.LogInformation($"myQueueItem.RequesterName = {myQueueItem.RequesterName}");
-                log.LogInformation($"myQueueItem.RequesterEmail = {myQueueItem.RequesterEmail}");
-                log.LogInformation($"config[\"userId\"] = {config["userId"]}");
+                string ErrorMessage = data?.ErrorMessage;
+                string FailedMethod = data?.FailedMethod;
 
-                SendEmailToUser(graphClient, log, emails, siteUrl, displayName, status, comments, requester, requesterEmail, EmailSender, HD_Email);
+                SendEmailToUser(graphClient, log, emails, siteUrl, displayName, status, comments, requester, requesterEmail, EmailSender, HD_Email, ErrorMessage, FailedMethod);
             }
             catch (Exception e)
             {
@@ -70,7 +58,7 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
         /// <param name="comments"></param>
         /// <param name="requester"></param>
         /// <param name="requesterEmail"></param>
-        public static async void SendEmailToUser(GraphServiceClient graphClient, ILogger log, string emails, string siteUrl, string displayName, string status, string comments, string requester, string requesterEmail, string EmailSender, string HD_Email)
+        public static async void SendEmailToUser(GraphServiceClient graphClient, ILogger log, string emails, string siteUrl, string displayName, string status, string comments, string requester, string requesterEmail, string EmailSender, string HD_Email, string ErrorMessage, string FailedMethod)
         {
 
             switch (status)
@@ -91,7 +79,6 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
                     };
                     try
                     {
-                        EmailSender = "f1653911-2a97-4492-ad94-ebd7eb17ccfd";
                         await graphClient.Users[EmailSender].SendMail(submitMsg).Request().PostAsync();
                         log.LogInformation($"Send email to {requesterEmail} successfully.");
                     }
@@ -189,53 +176,45 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
                         log.LogInformation($"Error: {e.Message}");
                     }
                     break;
+
+
+                case "Failed":
+
+                    requesterEmail = "oliver.postlethwaite@tbs-sct.gc.ca";
+
+                    var failedMsg = new Message
+                    {
+                        Subject = "The SCW failed!",
+                        Body = new ItemBody
+                        {
+                            ContentType = BodyType.Html,
+                            Content = $"This method failed: {FailedMethod}<br /><br />This is the error message: {ErrorMessage}"
+                        },
+                        ToRecipients = new List<Recipient>()
+                        {
+                            new Recipient { EmailAddress = new EmailAddress { Address = $"{requesterEmail}" } }
+                        }
+                    };
+                    try
+                    {
+                        await graphClient.Users[EmailSender].SendMail(failedMsg).Request().PostAsync();
+                        log.LogInformation($"Send email to {requesterEmail} successfully.");
+                    }
+                    catch (ServiceException e)
+                    {
+                        log.LogInformation($"Error: {e.Message}");
+                    }
+
+                    break;
+
+
+
                 default:
                     log.LogInformation($"The status was {status}. This status is not part of the switch statement.");
                     break;
             };
         }
 
-        private static async Task InsertMessageAsync(ListItem listItem, CloudQueue theQueue, ILogger log)
-        {
-            SpaceRequest request = new SpaceRequest();
-
-            request.SpaceName = listItem.Fields.AdditionalData["Title"].ToString();
-            request.SpaceNameFR = listItem.Fields.AdditionalData["SpaceNameFR"].ToString();
-            request.Owner1 = listItem.Fields.AdditionalData["Owner1"].ToString();
-            request.SpaceDescription = listItem.Fields.AdditionalData["SpaceDescription"].ToString();
-            request.SpaceDescriptionFR = listItem.Fields.AdditionalData["SpaceDescriptionFR"].ToString();
-            request.TemplateTitle = listItem.Fields.AdditionalData["TemplateTitle"].ToString();
-            request.TeamPurpose = listItem.Fields.AdditionalData["TeamPurpose"].ToString();
-            request.BusinessJustification = listItem.Fields.AdditionalData["BusinessJustification"].ToString();
-            request.RequesterName = listItem.Fields.AdditionalData["RequesterName"].ToString();
-            request.RequesterEmail = listItem.Fields.AdditionalData["RequesterEmail"].ToString();
-            request.Status = listItem.Fields.AdditionalData["Status"].ToString();
-            request.ApprovedDate = listItem.Fields.AdditionalData["ApprovedDate"].ToString();
-            request.Comment = listItem.Fields.AdditionalData["Comment"].ToString();
-
-            string serializedMessage = JsonConvert.SerializeObject(request);
-
-            CloudQueueMessage message = new CloudQueueMessage(serializedMessage);
-            await theQueue.AddMessageAsync(message);
-        }
+        
     }
-
-    public class SpaceRequest
-    {
-        public string Id { get; set; }
-        public string SpaceName { get; set; }
-        public string SpaceNameFR { get; set; }
-        public string Owner1 { get; set; }
-        public string SpaceDescription { get; set; }
-        public string SpaceDescriptionFR { get; set; }
-        public string TemplateTitle { get; set; }
-        public string TeamPurpose { get; set; }
-        public string BusinessJustification { get; set; }
-        public string RequesterName { get; set; }
-        public string RequesterEmail { get; set; }
-        public string Status { get; set; }
-        public string ApprovedDate { get; set; }
-        public string Comment { get; set; }
-    }
-
 }
