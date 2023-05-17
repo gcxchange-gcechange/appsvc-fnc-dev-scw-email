@@ -13,7 +13,7 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
         [FunctionName("Email")]
         public void Run([QueueTrigger("email", Connection = "AzureWebJobsStorage")] string myQueueItem, ILogger log)
         {
-            log.LogInformation("Email trigger function triggered Test");
+            log.LogInformation("Email trigger function triggered");
 
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json", optional: true, reloadOnChange: true).AddEnvironmentVariables().Build();
             dynamic data = JsonConvert.DeserializeObject(myQueueItem);
@@ -36,9 +36,10 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
                 string HD_Email = "";
 
                 string ErrorMessage = data?.ErrorMessage;
-                string FailedMethod = data?.FailedMethod;
+                string Method = data?.Method;
+                string FunctionApp = data?.FunctionApp;
 
-                SendEmailToUser(graphClient, log, emails, siteUrl, displayName, status, comments, requester, requesterEmail, EmailSender, HD_Email, ErrorMessage, FailedMethod);
+                SendEmailToUser(graphClient, log, emails, siteUrl, displayName, status, comments, requester, requesterEmail, EmailSender, HD_Email, ErrorMessage, FunctionApp, Method);
             }
             catch (Exception e)
             {
@@ -58,7 +59,7 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
         /// <param name="comments"></param>
         /// <param name="requester"></param>
         /// <param name="requesterEmail"></param>
-        public static async void SendEmailToUser(GraphServiceClient graphClient, ILogger log, string emails, string siteUrl, string displayName, string status, string comments, string requester, string requesterEmail, string EmailSender, string HD_Email, string ErrorMessage, string FailedMethod)
+        public static async void SendEmailToUser(GraphServiceClient graphClient, ILogger log, string emails, string siteUrl, string displayName, string status, string comments, string requester, string requesterEmail, string EmailSender, string HD_Email, string ErrorMessage, string FunctionApp, string Method)
         {
 
             switch (status)
@@ -180,15 +181,15 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
 
                 case "Failed":
 
-                    requesterEmail = "oliver.postlethwaite@tbs-sct.gc.ca";
+                    //requesterEmail = "oliver.postlethwaite@tbs-sct.gc.ca";
 
                     var failedMsg = new Message
                     {
-                        Subject = "The SCW failed!",
+                        Subject = "SCW - Failure Notification",
                         Body = new ItemBody
                         {
                             ContentType = BodyType.Html,
-                            Content = $"This method failed: {FailedMethod}<br /><br />This is the error message: {ErrorMessage}"
+                            Content = $"<p>The Space Creation Wizard failed.</p><strong>Site URL:</strong> {siteUrl}<br /><br /><strong>Function App:</strong> {FunctionApp}<br /><strong>Method:</strong> {Method}<br /><br /><strong>Error Message:</strong><br />{ErrorMessage.Replace("\r\n", "<br />")}"
                         },
                         ToRecipients = new List<Recipient>()
                         {
