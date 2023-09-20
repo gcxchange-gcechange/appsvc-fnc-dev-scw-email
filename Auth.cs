@@ -19,8 +19,8 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
         string _tenantId = "";
         string _clientId = "";
         string _clientSecret = "";
-
         string _tokenEndpoint = "";
+        ILogger _log;
 
         public ROPCConfidentialTokenCredential(ILogger log)
         {
@@ -28,6 +28,8 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
            .AddEnvironmentVariables()
            .Build();
+
+            _log = log;
 
             SecretClientOptions options = new SecretClientOptions()
             {
@@ -102,10 +104,9 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
             };
             var response = httpClient.SendAsync(request).Result.Content.ReadAsStringAsync().Result;
             dynamic responseJson = JsonConvert.DeserializeObject(response);
+
             var expirationDate = DateTimeOffset.UtcNow.AddMinutes(60.0);
             return new ValueTask<AccessToken>(new AccessToken(responseJson.access_token.ToString(), expirationDate));
         }
-        // }
     }
-
 }
