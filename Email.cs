@@ -33,6 +33,7 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
                 string comments = data?.Comment;
                 string requester = data?.RequesterName;
                 string requesterEmail = data?.RequesterEmail;
+                string securityCategory = data?.SecurityCategory;
                 string EmailSender = config["userId"];
                 string HD_Email = "";
 
@@ -40,7 +41,7 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
                 string Method = data?.Method;
                 string FunctionApp = data?.FunctionApp;
 
-                SendEmailToUser(graphClient, log, emails, siteUrl, displayName, displayNameFr, status, comments, requester, requesterEmail, EmailSender, HD_Email, ErrorMessage, FunctionApp, Method);
+                SendEmailToUser(graphClient, log, securityCategory, emails, siteUrl, displayName, displayNameFr, status, comments, requester, requesterEmail, EmailSender, HD_Email, ErrorMessage, FunctionApp, Method);
             }
             catch (Exception e)
             {
@@ -60,7 +61,7 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
         /// <param name="comments"></param>
         /// <param name="requester"></param>
         /// <param name="requesterEmail"></param>
-        public static async void SendEmailToUser(GraphServiceClient graphClient, ILogger log, string emails, string siteUrl, string displayName, string displayNameFr, string status, string comments, string requester, string requesterEmail, string EmailSender, string HD_Email, string ErrorMessage, string FunctionApp, string Method)
+        public static async void SendEmailToUser(GraphServiceClient graphClient, ILogger log, string SecurityCategory, string emails, string siteUrl, string displayName, string displayNameFr, string status, string comments, string requester, string requesterEmail, string EmailSender, string HD_Email, string ErrorMessage, string FunctionApp, string Method)
         {
 
             switch (status)
@@ -72,7 +73,7 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
                         Body = new ItemBody
                         {
                             ContentType = BodyType.Html,
-                            Content = Templates.RequestReceived(displayName, displayNameFr)
+                            Content = (SecurityCategory == "unclassified") ? Templates.RequestReceived(displayName, displayNameFr) : Templates.RequestReceivedProB(displayName, displayNameFr)
                         },
                         ToRecipients = new List<Recipient>()
                         {
@@ -103,7 +104,7 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
                         Body = new ItemBody
                         {
                             ContentType = BodyType.Html,
-                            Content = Templates.RequestRejected(displayName, displayNameFr, comments)
+                            Content = (SecurityCategory == "unclassified") ? Templates.RequestRejected(displayName, displayNameFr, comments) : Templates.RequestRejectedProB(displayName, displayNameFr, comments)
                         },
                         ToRecipients = new List<Recipient>()
                         {
@@ -123,7 +124,7 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
                         Body = new ItemBody
                         {
                             ContentType = BodyType.Html,
-                            Content = Templates.RequestApproved(displayName, displayNameFr, requester, siteUrl)
+                            Content = (SecurityCategory == "unclassified") ? Templates.RequestApproved(displayName, displayNameFr, requester, siteUrl) : Templates.RequestApprovedProB(displayName, displayNameFr, requester, siteUrl)
                         },
                         ToRecipients = new List<Recipient>()
                             {

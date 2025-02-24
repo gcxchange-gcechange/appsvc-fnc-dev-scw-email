@@ -66,6 +66,56 @@
             ";
         }
 
+        public static string RequestReceivedProB(string displayNameEn, string displayNameFr)
+        {
+            return @$"
+            <a href='#fr'>La version française suit</a>
+
+            <p>Hello from GCXchange!</p>
+
+            <p>Thank you for requesting a new Protected B community on GCXchange {displayNameEn}.</p>
+
+            <p>We are reviewing your request. This process takes 24 to 48 business hours from the time you submitted your request. If your request is approved, you will receive a second e-mail with the details you need to finish creating the community page and begin collaborating.</p>
+
+            <p>In the meantime, visit the <a href='https://gcxgce.sharepoint.com/sites/Support/SitePages/FAQ.aspx'>GCXchange Support page</a> for <a href='https://gcxgce.sharepoint.com/sites/Support/SitePages/Learn-more-about-gcxchange.aspx'>tips and tricks</a> on becoming a collaboration pro:</p>
+
+            <ul>
+                <li>Check out the <a href='https://gcxgce.sharepoint.com/sites/Support/SitePages/FAQ.aspx'>FAQs</a>, specifically the section on Protected A and B communities and information</li>
+                <li>Review the Terms and Conditions of use for Protected A and B Communities so that you know your roles and responsibilities as the Owner of a Protected community</li>
+                <li>Learn how to promote accessibility on your community</li>
+            </ul>
+
+            <br />
+
+            <p>Looking forward to collaborating with you!</p>
+
+            The GCXchange team<br />
+            <br />
+
+            <hr>
+
+            <p id='fr'>Bonjour!</p>
+
+            <p>Merci pour votre demande concernant la création d’une nouvelle collectivité ayant accès aux renseignements Protégé B sur GCÉchange {displayNameFr}.</p>
+
+            <p>Nous examinons votre demande. Ce processus prend de 24 à 48 heures ouvrables à partir du moment où vous soumettez votre demande. Si votre demande est approuvée, vous recevrez un deuxième courriel renfermant les renseignements nécessaires pour terminer la création de la page de la collectivité et commencer à collaborer.</p>
+
+            <p>En attendant, consultez la <a href='https://gcxgce.sharepoint.com/sites/Support/SitePages/fr/FAQ.aspx'>page de soutien GCÉchange</a> pour obtenir des <a href='https://gcxgce.sharepoint.com/sites/Support/SitePages/fr/Learn-more-about-gcxchange.aspx'>conseils</a> pour devenir un pro de la collaboration :</p>
+
+            <ul>
+                <li>Consultez la <a href='https://gcxgce.sharepoint.com/sites/Support/SitePages/fr/FAQ.aspx'>FAQ</a>, en particulier la section sur les collectivités et les renseignements Protégé A et Protégé B.</li>
+                <li>Passez en revue les conditions d’utilisation pour les collectivités ayant accès aux renseignements Protégé A et Protégé B pour connaître vos rôles et responsabilités en tant que propriétaire d’une collectivité ayant accès à des renseignements protégés.</li>
+                <li>Apprenez à promouvoir l’accessibilité dans votre collectivité.</li>
+            </ul>
+
+            <br />
+
+            <p>Au plaisir de collaborer avec vous!</p>
+
+            L’équipe de GCÉchange
+            ";
+        }
+
         public static string RequestRejected(string displayNameEn, string displayNameFr, string comments)
         {
             return @$"
@@ -103,6 +153,44 @@
             <p>Nous espérons vous revoir bientôt sur GCÉchange pour tisser des liens et collaborer!</p>
 
             L’équipe GCÉchange
+            ";
+        }
+
+        public static string RequestRejectedProB(string displayNameEn, string displayNameFr, string comments)
+        {
+            return @$"
+            <a href='#fr'>La version française suit</a> 
+
+            <p>We have reviewed your request for a GCXchange Protected B community {displayNameEn}.</p>
+
+            <p>Your request has not been approved at this time for the following reason(s):</p>
+
+            <p>{comments}</p>
+
+            <p>If you are still interested in creating a community, or if you think that our decision has been made by error, please <a href='https://gcxgce.sharepoint.com/sites/Support/SitePages/Submit-a-ticket.aspx'>submit a ticket</a> to our Support team.</p>
+
+            <br />
+
+            <p>We are looking forward to seeing you back on GCXchange soon to connect and collaborate!</p>
+
+            The GCXchange team<br />
+            <br />
+
+            <hr>
+ 
+            <p id='fr'>Nous avons examiné votre demande de création d’une collectivité ayant accès aux renseignements Protégé B sur GCÉchange {displayNameEn}.</p>
+
+            <p>À cette étape, votre demande n’a pas été approuvée pour la ou les raisons suivantes :</p>
+
+            <p>{comments}</p>
+
+            <p>Si vous souhaitez toujours créer une collectivité, ou si vous pensez que notre décision a été faite par erreur, veuillez <a href='https://gcxgce.sharepoint.com/sites/Support/SitePages/fr/Submit-a-ticket.aspx'>soumettre un billet</a> à notre équipe de soutien.</p>
+
+            <br />
+
+            <p>Nous espérons vous revoir bientôt sur GCÉchange pour tisser des liens et collaborer!</p>
+
+            L’équipe de GCÉchange 
             ";
         }
 
@@ -183,6 +271,64 @@
             <p>Bonne continuation avec cette collaboration!</p>
 
             Équipe GCÉchange
+            ";
+        }
+
+        public static string RequestApprovedProB(string displayNameEn, string displayNameFr, string communityOwner, string siteUrl)
+        {
+            return @$"
+            <a href='#fr'>La version française suit</a>
+
+            <p>Welcome to GCXchange!</p> 
+
+            <p>{communityOwner}, your Protected B community {displayNameEn} is now ready!</p> 
+
+            <p>Please note that protected information can only be shared in a Protected A and B community in GCXchange. It is important to review and accept the Terms and Conditions of use for Protected A and B communities before proceeding.</p>
+
+            <p>To access your community, visit <a href='{siteUrl}'>{displayNameEn}</a>.</p>
+
+            <p>You can also access your community’s Teams channel by clicking “Conversations” in the menu on your SharePoint page.</p>
+
+            <p>Now, you can start adding content to your SharePoint community page on GCXchange.</p>
+
+            <p>You should also invite your Members to your new community. Since this is a Protected B community, Members cannot search for it, and only Owners can invite them.</p>
+
+            <p>Please inform your co-Owners that the community has now been approved and that they need to review and approve the Terms and Conditions of use for Protected A and B communities. Don't forget that your community needs to have at least 2 Owners at all times.</p>
+
+            <p>Visit the GCXchange Support page for more information about Protected A and B communities, including <a href='https://gcxgce.sharepoint.com/sites/Support/SitePages/FAQ.aspx'>helpful FAQs</a>.</p>
+
+            <br />
+
+            <p>Happy Collaborating!</p>
+
+            The GCXchange team<br />
+            <br />
+
+            <hr>
+
+            <p id='fr'><strong>Bienvenue à GCÉchange!</strong></p>
+
+            <p>{communityOwner}, votre collectivité ayant accès aux renseignements Protégé B {displayNameFr} est maintenant prête!</p>
+
+            <p>Veuillez noter que les renseignements protégés ne peuvent être partagés que dans une collectivité ayant accès aux renseignements Protégé A et Protégé B dans GCÉchange. Il est important d’examiner et d’accepter les conditions d’utilisation pour les collectivités ayant accès aux renseignements Protégé A et Protégé B avant d’aller de l’avant.</p>
+
+            <p>Pour accéder à votre collectivité, visitez <a href='{siteUrl}/SitePages/fr/Home.aspx'>{displayNameFr}</a>.</p>
+
+            <p>Vous pouvez également accéder au canal Teams de votre collectivité en cliquant sur « Conversations » dans le menu de votre page sur SharePoint.</p>
+
+            <p>Vous pouvez maintenant commencer à ajouter du contenu à la page GCÉchange de votre collectivité sur SharePoint.</p>
+
+            <p>Vous devriez également inviter vos membres dans votre nouvelle collectivité. Étant donné que c’est une collectivité ayant aux renseignements Protégé B, les membres ne peuvent pas la chercher, et seuls les propriétaires peuvent les inviter.</p>
+
+            <p>Veuillez informer vos copropriétaires que la collectivité a maintenant été approuvée et qu’ils doivent examiner et approuver les conditions d’utilisation pour les collectivités ayant accès aux renseignements Protégé A et Protégé B. N’oubliez pas que votre collectivité doit avoir au moins deux propriétaires en tout temps.</p>
+
+            <p>Visitez la page de soutien GCÉchange pour obtenir de plus amples renseignements sur les collectivités ayant accès aux renseignements Protégé A et Protégé B, y compris une <a href='https://gcxgce.sharepoint.com/sites/Support/SitePages/fr/FAQ.aspx'>FAQ utile</a>.</p>
+
+            <br />
+
+            <p>Bonne collaboration!</p>
+
+            L’équipe de GCÉchange 
             ";
         }
     }
