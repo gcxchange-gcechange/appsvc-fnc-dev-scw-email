@@ -1,30 +1,40 @@
-using System;
-using Microsoft.Azure.WebJobs;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
+using Microsoft.Graph.Models;
+using Microsoft.Graph.Users.Item.SendMail;
 using Newtonsoft.Json;
-using System.Collections.Generic;
-using Microsoft.Extensions.Configuration;
 
 namespace appsvc_fnc_dev_scw_email_dotnet001
 {
     public class Email
     {
-        [FunctionName("Email")]
-        public void Run([QueueTrigger("email", Connection = "AzureWebJobsStorage")] string myQueueItem, ILogger log)
+        private readonly ILogger<Email> _logger;
+        public Email(ILogger<Email> logger)
         {
-            log.LogInformation("Email trigger function triggered");
+            _logger = logger;
+        }
+
+        [Function("Email")]
+        public async Task<IActionResult> RunAsync([QueueTrigger("email", Connection = "AzureWebJobsStorage")] string myQueueItem)
+        {
+            _logger.LogError($"Email trigger function triggered {DateTime.Now}");
 
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json", optional: true, reloadOnChange: true).AddEnvironmentVariables().Build();
-            dynamic data = JsonConvert.DeserializeObject(myQueueItem);
 
-            log.LogInformation($"myQueueItem = {myQueueItem}");
+            dynamic data = JsonConvert.DeserializeObject(myQueueItem);
+            _logger.LogError($"myQueueItem = {myQueueItem}");
 
             var scopes = new[] { "user.read mail.send" };
-            ROPCConfidentialTokenCredential auth = new ROPCConfidentialTokenCredential(log);
+            ROPCConfidentialTokenCredential auth = new ROPCConfidentialTokenCredential(_logger);
             var graphClient = new GraphServiceClient(auth, scopes);
 
-            try {
+            IActionResult result;
+
+            try
+            {
                 string emails = "";
                 string siteUrl = $"{config["sharePointUrl"]}{data?.Id}";
                 string displayName = data?.SpaceName;
@@ -41,12 +51,15 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
                 string Method = data?.Method;
                 string FunctionApp = data?.FunctionApp;
 
-                SendEmailToUser(graphClient, log, securityCategory, emails, siteUrl, displayName, displayNameFr, status, comments, requester, requesterEmail, EmailSender, HD_Email, ErrorMessage, FunctionApp, Method);
+                result = await SendEmailToUser(graphClient, _logger, securityCategory, emails, siteUrl, displayName, displayNameFr, status, comments, requester, requesterEmail, EmailSender, HD_Email, ErrorMessage, FunctionApp, Method);
             }
             catch (Exception e)
             {
-                log.LogInformation($"Email error: {e.Message}");
+                result = new BadRequestResult();
+                _logger.LogInformation($"Email error: {e.Message}");
             }
+
+            return new OkResult();
         }
 
         /// <summary>
@@ -61,136 +74,123 @@ namespace appsvc_fnc_dev_scw_email_dotnet001
         /// <param name="comments"></param>
         /// <param name="requester"></param>
         /// <param name="requesterEmail"></param>
-        public static async void SendEmailToUser(GraphServiceClient graphClient, ILogger log, string SecurityCategory, string emails, string siteUrl, string displayName, string displayNameFr, string status, string comments, string requester, string requesterEmail, string EmailSender, string HD_Email, string ErrorMessage, string FunctionApp, string Method)
+        public async Task<IActionResult> SendEmailToUser(GraphServiceClient graphClient, ILogger log, string SecurityCategory, string emails, string siteUrl, string displayName, string displayNameFr, string status, string comments, string requester, string requesterEmail, string EmailSender, string HD_Email, string ErrorMessage, string FunctionApp, string Method)
         {
+            SendMailPostRequestBody requestBody;
 
             switch (status)
             {
                 case "Submitted":
-                    var submitMsg = new Message
+                    requestBody = new SendMailPostRequestBody
                     {
-                        Subject = "We received your request for a GCXchange community / Nous avons reçu votre demande concernant une collectivité sur GCÉchange",
-                        Body = new ItemBody
+                        Message = new Message
                         {
-                            ContentType = BodyType.Html,
-                            Content = (SecurityCategory == "unclassified") ? Templates.RequestReceived(displayName, displayNameFr) : Templates.RequestReceivedProB(displayName, displayNameFr)
-                        },
-                        ToRecipients = new List<Recipient>()
-                        {
-                            new Recipient { EmailAddress = new EmailAddress { Address = $"{requesterEmail}" } }
-                        }
-                    };
-                    try
-                    {
-                        await graphClient.Users[EmailSender].SendMail(submitMsg).Request().PostAsync();
-                        log.LogInformation($"Send email to {requesterEmail} successfully.");
-                    }
-                    catch (ServiceException e)
-                    {
-                        log.LogError($"Exception: {e.Message}");
-                        if (e.InnerException is not null)
-                            log.LogError($"InnerException: {e.InnerException.Message}");
-                        log.LogError($"Exception: {e.StackTrace}");
-                    }
-                    break;
-                case "Rejected":
-
-
-                    log.LogInformation($"comments: {comments}");
-
-                    var rejectMsg = new Message
-                    {
-                        Subject = "Sorry, your GCXchange community was not created / Malheureusement, votre collectivité GCÉchange n'a pas été créé",
-                        Body = new ItemBody
-                        {
-                            ContentType = BodyType.Html,
-                            Content = (SecurityCategory == "unclassified") ? Templates.RequestRejected(displayName, displayNameFr, comments) : Templates.RequestRejectedProB(displayName, displayNameFr, comments)
-                        },
-                        ToRecipients = new List<Recipient>()
-                        {
-                            new Recipient { EmailAddress = new EmailAddress { Address = $"{requesterEmail}" } }
-                        }
-                    };
-
-                    //var saveToSentItems = false;
-                    await graphClient.Users[EmailSender].SendMail(rejectMsg).Request().PostAsync();
-                    log.LogInformation($"Send email to {requesterEmail} successfully.");
-
-                    break;
-                case "Team Created":
-                    var message = new Message
-                    {
-                        Subject = "Your GCXchange community is ready/Votre collectivité GCÉchange est prête",
-                        Body = new ItemBody
-                        {
-                            ContentType = BodyType.Html,
-                            Content = (SecurityCategory == "unclassified") ? Templates.RequestApproved(displayName, displayNameFr, requester, siteUrl) : Templates.RequestApprovedProB(displayName, displayNameFr, requester, siteUrl)
-                        },
-                        ToRecipients = new List<Recipient>()
+                            Subject = "We received your request for a GCXchange community / Nous avons reçu votre demande concernant une collectivité sur GCÉchange",
+                            Body = new ItemBody
+                            {
+                                ContentType = BodyType.Html,
+                                Content = (SecurityCategory == "unclassified") ? Templates.RequestReceived(displayName, displayNameFr) : Templates.RequestReceivedProB(displayName, displayNameFr)
+                            },
+                            ToRecipients = new List<Recipient>()
                             {
                                 new Recipient { EmailAddress = new EmailAddress { Address = $"{requesterEmail}" } }
                             }
+                        }
                     };
 
-                    var saveToSentItems = false;
-                    await graphClient.Users[EmailSender].SendMail(message, saveToSentItems).Request().PostAsync();
+                    await graphClient.Users[EmailSender].SendMail.PostAsync(requestBody);
                     log.LogInformation($"Send email to {requesterEmail} successfully.");
+                    break;
+                case "Rejected":
+                    requestBody = new SendMailPostRequestBody
+                    {
+                        Message = new Message
+                        {
+                            Subject = "Sorry, your GCXchange community was not created / Malheureusement, votre collectivité GCÉchange n'a pas été créé",
+                            Body = new ItemBody
+                            {
+                                ContentType = BodyType.Html,
+                                Content = (SecurityCategory == "unclassified") ? Templates.RequestRejected(displayName, displayNameFr, comments) : Templates.RequestRejectedProB(displayName, displayNameFr, comments)
+                            },
+                            ToRecipients = new List<Recipient>()
+                            {
+                                new Recipient { EmailAddress = new EmailAddress { Address = $"{requesterEmail}" } }
+                            }
+                        }
+                    };
+                    
+                    await graphClient.Users[EmailSender].SendMail.PostAsync(requestBody);
+                    log.LogInformation($"Send email to {requesterEmail} successfully.");
+                    break;
+                case "Team Created":
+                    requestBody = new SendMailPostRequestBody
+                    {
+                        Message = new Message
+                        {
+                            Subject = "Your GCXchange community is ready/Votre collectivité GCÉchange est prête",
+                            Body = new ItemBody
+                            {
+                                ContentType = BodyType.Html,
+                                Content = (SecurityCategory == "unclassified") ? Templates.RequestApproved(displayName, displayNameFr, requester, siteUrl) : Templates.RequestApprovedProB(displayName, displayNameFr, requester, siteUrl)
+                            },
+                            ToRecipients = new List<Recipient>()
+                            {
+                                new Recipient { EmailAddress = new EmailAddress { Address = $"{requesterEmail}" } }
+                            }
+                        }
+                    };
 
+                    await graphClient.Users[EmailSender].SendMail.PostAsync(requestBody);
+                    log.LogInformation($"Send email to {requesterEmail} successfully.");
                     break;
                 case "Notif_HD":
-                    var HD_Msg = new Message
+                    requestBody = new SendMailPostRequestBody
                     {
-                        Subject = $"New pending request! {displayName}",
-                        Body = new ItemBody
+                        Message = new Message
                         {
-                            ContentType = BodyType.Html,
-                            Content = $"<a href=\"https://gcxgce.sharepoint.com/teams/scw\">Click here</a> to review the request."
-                        },
-                        ToRecipients = new List<Recipient>()
-                        {
-                            new Recipient { EmailAddress = new EmailAddress { Address = $"{HD_Email}" } }
+                            Subject = $"New pending request! {displayName}",
+                            Body = new ItemBody
+                            {
+                                ContentType = BodyType.Html,
+                                Content = $"<a href=\"https://gcxgce.sharepoint.com/teams/scw\">Click here</a> to review the request."
+                            },
+                            ToRecipients = new List<Recipient>()
+                            {
+                                new Recipient { EmailAddress = new EmailAddress { Address = $"{HD_Email}" } }
+                            }
                         }
                     };
-                    try
-                    {
-                        await graphClient.Users[EmailSender].SendMail(HD_Msg).Request().PostAsync();
-                        log.LogInformation($"Send email to {HD_Email} successfully.");
-                    }
-                    catch (ServiceException e)
-                    {
-                        log.LogInformation($"Error: {e.Message}");
-                    }
 
+                    await graphClient.Users[EmailSender].SendMail.PostAsync(requestBody);
+                    log.LogInformation($"Send email to {HD_Email} successfully.");
                     break;
                 case "Failed":
-                    var failedMsg = new Message
+                    requestBody = new SendMailPostRequestBody
                     {
-                        Subject = "SCW - Failure Notification",
-                        Body = new ItemBody
+                        Message = new Message
                         {
-                            ContentType = BodyType.Html,
-                            Content = $"<p>The Space Creation Wizard failed.</p><strong>Site URL:</strong> {siteUrl}<br /><br /><strong>Function App:</strong> {FunctionApp}<br /><strong>Method:</strong> {Method}<br /><br /><strong>Error Message:</strong><br />{ErrorMessage.Replace("\r\n", "<br />")}"
-                        },
-                        ToRecipients = new List<Recipient>()
-                        {
-                            new Recipient { EmailAddress = new EmailAddress { Address = $"{requesterEmail}" } }
+                            Subject = "SCW - Failure Notification",
+                            Body = new ItemBody
+                            {
+                                ContentType = BodyType.Html,
+                                Content = $"<p>The Space Creation Wizard failed.</p><strong>Site URL:</strong> {siteUrl}<br /><br /><strong>Function App:</strong> {FunctionApp}<br /><strong>Method:</strong> {Method}<br /><br /><strong>Error Message:</strong><br />{ErrorMessage.Replace("\r\n", "<br />")}"
+                            },
+                            ToRecipients = new List<Recipient>()
+                            {
+                                new Recipient { EmailAddress = new EmailAddress { Address = $"{requesterEmail}" } }
+                            }
                         }
                     };
-                    try
-                    {
-                        await graphClient.Users[EmailSender].SendMail(failedMsg).Request().PostAsync();
-                        log.LogInformation($"Send email to {requesterEmail} successfully.");
-                    }
-                    catch (ServiceException e)
-                    {
-                        log.LogInformation($"Error: {e.Message}");
-                    }
 
+                    await graphClient.Users[EmailSender].SendMail.PostAsync(requestBody);
+                    log.LogInformation($"Send email to {requesterEmail} successfully.");
                     break;
                 default:
                     log.LogInformation($"The status was {status}. This status is not part of the switch statement.");
                     break;
             };
+
+            return new OkResult();
         }
     }
 }
